@@ -48,6 +48,9 @@ Processed images will be saved to the same directory as your original images wit
 ## Additional References
 
 [J.W. Rose, L.R. Glicksman, Dropwise condensation—The distribution of drop sizes, Int. J. Heat Mass Transfer __16__ (1973) 411-425.](https://doi.org/10.1016/0017-9310(73)90068-9)
+
 [Y.-T. Wu, C.-X. Yang, X.-G. Yuan, Drop distributions and numerical simulation of dropwise condensation heat transfer, Int. J. Heat Mass Transfer __44__ (2001) 4455-4464.](https://doi.org/10.1016/S0017-9310(01)00085-0)
+
 [J.W. Rose, Dropwise condensation theory and experiment: A review, Proc. Inst. Mech. Eng. A __216__ (2002) 115-128.](https://doi.org/10.1243/09576500260049034)
+
 [P.B. Weisensee, Y. Wang, Q. Hongliang, D. Schultz, W.P. King, N. Miljkovic, Condensate droplet size distribution on lubricant-infused surfaces, Int. J. Heat Mass Transfer __109__ (2017) 187-199.](https://doi.org/10.1016/j.ijheatmasstransfer.2017.01.119)
