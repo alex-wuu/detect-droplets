@@ -44,11 +44,11 @@ $ python app.py
 
 You should see a window like this:
 
-![alt text](images/readme1.png)
+![alt text](images/readme_0.png)
 
 Select the directories for your images and output, and then enter in your settings in the window that comes up from clicking Settings/Run:
 
-![alt text](images/readme2.png)
+![alt text](images/readme_1.png)
 
 Processed images will be saved as a JPEG to the directory of your choice with filenames ending in `_out` and a CSV file named `out.csv` will contain the number densities for each range of droplet sizes. A settings file is also saved as `settings.csv` in the output directory.
 
