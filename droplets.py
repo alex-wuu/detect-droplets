@@ -42,27 +42,38 @@ def createRow(calib, interval, count):
     return [minR, maxR, (minR + maxR) * 500, count, count / (maxR - minR)]
 
 
-if __name__ == "__main__":
-    calib = 4.2623 / 1000  # mm/pixel
-    minRs = [100, 50, 30, 15, 10]  # minimum radii for hough circles
-    maxRs = [200, *minRs[:-1]]  # maximum radii for hough circles
-    cCounts = np.array([0.0 for x in range(len(minRs))])  # initialize circle count/area for each size range
-    path = 'PATH_TO_YOUR_IMAGES_HERE'
+def main(settings, calib):
+    calib = calib / 1000  # convert from microns to mm/pixel
+    cCounts = np.array([0.0 for x in range(len(settings))])  # initialize circle count/area for each size range
+    path = os.environ["PATH"]
+    print('Picture path: ' + path)
+    outPath = os.environ["OUT"] + '/'
+    print('Output path: ' + outPath)
     images, filenames = loadAllImages(path)
+
+    # Output settings as csv
+    print('Outputting settings to settings.csv')
+    outRows = [["Calibration (microns/pix)", calib * 1000]]
+    outRows.append(["Min Radius (pix)", "Max Radius (pix)", "Canny Edge Threshold", "Accumulator Threshold"])
+    for row in settings:
+        outRows.append(row)
+    with open(outPath + 'settings.csv', 'w', newline='') as csvfile:
+        filewriter = csv.writer(csvfile)
+        filewriter.writerows(outRows)
+
     for imgNum, img in enumerate(images):
         print('Processing image: {}'.format(filenames[imgNum]))
         height, width = img.shape
         cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        c0 = findCircles(img, cimg, 200, 150, 70, minRs[0], maxRs[0])
-        c1 = findCircles(img, cimg, 100, 75, 55, minRs[1], maxRs[1])
-        c2 = findCircles(img, cimg, 60, 40, 55, minRs[2], maxRs[2])
-        c3 = findCircles(img, cimg, 30, 250, 30, minRs[3], maxRs[3])
-        c4 = findCircles(img, cimg, 20, 40, 22, minRs[4], maxRs[4])
-        cTotal = np.hstack((c0, c1, c2, c3, c4))[0]
+        indices = []  # Indices for beginning of each section of circles
+        cTotal = findCircles(img, cimg, settings[0][0] * 2, settings[0][2], settings[0][3], settings[0][0], settings[0][1])
+        indices.append(len(cTotal))
+        for i in range(1, len(settings)):
+            cAdd = findCircles(img, cimg, settings[i][0] * 2, settings[i][2], settings[i][3], settings[i][0], settings[i][1])
+            indices.append(sum(indices) + len(cAdd))
+            cTotal = np.hstack((cTotal, cAdd))
+        cTotal = cTotal[0]
         cLength = len(cTotal)
-
-        # Indices for beginning of each section of circles
-        indices = np.cumsum(np.array([len(c0[0]), len(c1[0]), len(c2[0]), len(c3[0]), len(c4[0])]))
 
         # Delete inner circles
         rowsToDelete = []
@@ -83,7 +94,7 @@ if __name__ == "__main__":
                     x2, y2, r2 = cTotal[j]
                     if (x2, y2, r2) == (0, 0, 0) or i == j or r1 < r2:
                         pass
-                    elif (np.linalg.norm(np.array([x1-x2, y1-y2])) + r2) < 1.1 * r1:
+                    elif (np.linalg.norm(np.array([x1 - x2, y1 - y2])) + r2) < 1.1 * r1:
                         cTotal[j] = [0, 0, 0]
                         rowsToDelete.append(j)
                     else:
@@ -92,24 +103,26 @@ if __name__ == "__main__":
         cTotalR = np.delete(cTotal, [0, 1], axis=1)  # remaining radii only
 
         # Re-find indices of each section after inner circle deletion
-        indices = np.array([np.argmax(cTotalR < 100), np.argmax(cTotalR < 50), np.argmax(cTotalR < 30), np.argmax(cTotalR < 15)])
+        indices = np.array([np.argmax(cTotalR < settings[i][0]) for i in range(len(settings) - 1)])
 
         # Add counts/area of each size interval to total count (cCounts)
-        cList = [cTotalR[0:indices[0]], cTotalR[indices[0]:indices[1]], cTotalR[indices[1]:indices[2]], cTotalR[indices[2]:indices[3]], cTotalR[indices[3]:]]
+        cList = [cTotalR[indices[i]:indices[i + 1]] for i in range(len(indices) - 1)]
+        cList.insert(0, cTotalR[0:indices[0]])  # Add first list of radii
+        cList.append(cTotalR[indices[-1]:])  # Add last list of radii
         for i in range(len(cList)):
             cCounts[i] += (len(cList[i]) / (calib**2 * height * width))
 
         # Draw circles onto a new image
         for i in cTotal:
             cv2.circle(cimg, (i[0], i[1]), i[2], (0, 255, 0), 2)
-        cv2.imwrite('{}{}_out.jpg'.format(path, os.path.splitext(filenames[imgNum])[0]), cimg)
+        cv2.imwrite('{}{}_out.jpg'.format(outPath, os.path.splitext(filenames[imgNum])[0]), cimg)
 
     # Output data as csv
     print('Outputting data to out.csv')
     outRows = [["Min r (mm)", "Max r (mm)", "Mean r (microns)", "Count/Area (#/mm^3)", "N(r) (#/mm^3)"]]
     cCounts = cCounts / len(images)
     for i in range(len(cCounts)):
-        outRows.append(createRow(calib, [minRs[i], maxRs[i]], cCounts[i]))
-    with open(path + 'out.csv', 'w', newline='') as csvfile:
+        outRows.append(createRow(calib, [settings[i][0], settings[i][1]], cCounts[i]))
+    with open(outPath + 'out.csv', 'w', newline='') as csvfile:
         filewriter = csv.writer(csvfile)
         filewriter.writerows(outRows)
