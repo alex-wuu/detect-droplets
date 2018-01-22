@@ -42,11 +42,11 @@ With your virtual environment activated, run with the following command:
 $ python app.py
 ```
 
-You can also build the program with PyInstaller and then run it:
+You can also build the program with PyInstaller and then run it (`sudo` might be needed to run the program):
 ```
 $ pip install pyinstaller
 $ pyinstaller app.py
-$ ./dist/app/app
+$ sudo ./dist/app/app
 ```
 
 You should see a window like this:
