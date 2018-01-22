@@ -56,7 +56,8 @@ Parameters for `cv2.HoughCircles` (named Canny Edge Threshold and Accumulator Th
 
 Click the Run button and wait for the processing to finish.
 
-Here is an example of what the output image can look like (original first, output second, and settings in the above image):
+Here is an example of what the output image can look like. The original image is first, the output image is second, and the settings are in the above image of the settings window. This is an image of dropwise condensation on a Teflon coated silicon substrate.
+
 ![alt text](images/test.jpg) ![alt text](images/test_out.jpg)
 
 ## Additional References
