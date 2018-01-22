@@ -37,13 +37,14 @@ $ pip install -r requirements.txt
 
 ## Usage
 
-Run with the following command:
+With your virtual environment activated, run with the following command:
 ```
 $ python app.py
 ```
 
 You can also build the program with PyInstaller and then run it:
 ```
+$ pip install pyinstaller
 $ pyinstaller app.py
 $ ./dist/app/app
 ```
