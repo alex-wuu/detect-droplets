@@ -43,9 +43,11 @@ $ python app.py
 ```
 
 You should see a window like this:
+
 ![alt text](images/readme1.png)
 
-Select the directories for your images and output, and then enter in your settings in the window that comes up from clicking Settings/Run
+Select the directories for your images and output, and then enter in your settings in the window that comes up from clicking Settings/Run:
+
 ![alt text](images/readme2.png)
 
 Processed images will be saved as a JPEG to the directory of your choice with filenames ending in `_out` and a CSV file named `out.csv` will contain the number densities for each range of droplet sizes. A settings file is also saved as `settings.csv` in the output directory.
@@ -54,7 +56,7 @@ Parameters for `cv2.HoughCircles` (named Canny Edge Threshold and Accumulator Th
 
 Click the Run button and wait for the processing to finish.
 
-Here is an example of what the output image can look like (original on left, output on right, and settings in the above image):
+Here is an example of what the output image can look like (original first, output second, and settings in the above image):
 ![alt text](images/test.jpg) ![alt text](images/test_out.jpg)
 
 ## Additional References
