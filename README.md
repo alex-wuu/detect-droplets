@@ -37,9 +37,15 @@ $ pip install -r requirements.txt
 
 ## Usage
 
-Run by doing:
+Run with the following command:
 ```
 $ python app.py
+```
+
+You can also build the program with PyInstaller and then run it:
+```
+$ pyinstaller app.py
+$ ./dist/app/app
 ```
 
 You should see a window like this:
