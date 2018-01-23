@@ -19,7 +19,7 @@ class SettingsMenu(QtWidgets.QWidget):
         self.headerNames = ['Min Radius (pix)', 'Max Radius (pix)', 'Canny Edge Threshold', 'Accumulator Threshold']
         self.settingsValues = []  # Used to access typed values
         self.delButtons = []  # Stores delete row buttons
-        self.rowIndices = {}  # Keep track of row indices after deleting rows
+        self.rowIndices = {}  # Keep track of row indices of grid:settingsValues/delButtons
         self.initUI()
 
     def addRow(self):
@@ -40,7 +40,11 @@ class SettingsMenu(QtWidgets.QWidget):
         self.delButtons.append(delRowButton)
         self.grid.addWidget(delRowButton, self.curRow, len(self.headerNames))
 
-        self.rowIndices[self.curRow] = self.curRow  # Set new row indices
+        # Set new row indices
+        if len(self.rowIndices) > 0:
+            self.rowIndices[row] = self.rowIndices[max(self.rowIndices)] + 1
+        else:
+            self.rowIndices[row] = row
         self.settingsValues.append(settingsRow)  # Add new row of text boxes to settingsValues
 
     def delRow(self, row):
@@ -52,11 +56,20 @@ class SettingsMenu(QtWidgets.QWidget):
         for box in self.settingsValues.pop(self.rowIndices[row] - 2):
             box.hide()
 
-        # Adjust indices and current row
+        # Adjust indices
+        curRowFlag = True  # Checks if last row was deleted
+        self.rowIndices.pop(row)  # Remove entry of deleted row
         for index in self.rowIndices:
-            if index >= row:
-                self.rowIndices[index] += -1
-        self.curRow += -1
+            if index > row:
+                curRowFlag = False
+                self.rowIndices[index] += -1  # Shift greater indices back 1 due to deletion
+
+        # Adjust current grid row for grid layout
+        if len(self.rowIndices) > 0:
+            # Current grid row is set to next greatest grid row when the last row is deleted
+            self.curRow = max(self.rowIndices) if curRowFlag else self.curRow
+        else:
+            self.curRow = 1  # When all rows are deleted
 
     def runAction(self):
         scriptSettings = []  # Stores settings entered by user
@@ -64,11 +77,13 @@ class SettingsMenu(QtWidgets.QWidget):
 
         # First check that all settings fields are valid, and build settings list
         try:
-            float(self.calibBox.text())
+            if float(self.calibBox.text()) <= 0:
+                raise ValueError('Negative or 0 value detected.')
         except ValueError:
             errorFlag = True
             QtWidgets.QMessageBox.about(self, 'Error', 'Invalid calibration value detected.')
         if len(self.settingsValues) == 0:
+            errorFlag = True
             QtWidgets.QMessageBox.about(self, 'Error', 'No settings detected.')
         for row in self.settingsValues:
             rowSettings = []  # Store settings from each column on the row
@@ -76,7 +91,10 @@ class SettingsMenu(QtWidgets.QWidget):
                 break
             for textBox in row:
                 try:
-                    rowSettings.append(int(textBox.text()))
+                    val = int(textBox.text())
+                    if val <= 0:
+                        raise ValueError('Negative or 0 value detected.')
+                    rowSettings.append(val)
                 except ValueError:
                     errorFlag = True
                     QtWidgets.QMessageBox.about(self, 'Error', 'Invalid settings value detected.')
@@ -90,7 +108,7 @@ class SettingsMenu(QtWidgets.QWidget):
             droplets.main(scriptSettings, float(self.calibBox.text()))
             QtWidgets.QMessageBox.about(self, "Detect Droplets", "Processing done. Output is at {}".format(os.environ["OUT"]))
         else:
-            QtWidgets.QMessageBox.about(self, 'Error', 'Missing selected path.')
+            QtWidgets.QMessageBox.about(self, 'Error', 'Missing selected directory.')
 
     def initUI(self):
         self.setLayout(self.grid)
@@ -140,7 +158,7 @@ class PathWidgets(QtWidgets.QWidget):
         self.initUI()
 
     def onClick(self):
-        # On click, ask to choose directory then edit text box with the selected path
+        # On click, ask to choose directory then edit text box with the path selected directory
         self.selectedDir = str(QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Directory'))
         if self.selectedDir != '':
             self.dirLabel.setText(self.selectedDir)
@@ -163,7 +181,7 @@ class AddButtons(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.photoPath = PathWidgets('Choose Path with Photos', 'PATH', self)
+        self.photoPath = PathWidgets('Choose Image Directory', 'PATH', self)
         self.outPath = PathWidgets('Choose Output Directory', 'OUT', self)
         self.setButton = SettingsButton('Settings/Run', self)
 
@@ -190,12 +208,13 @@ class App(QtWidgets.QMainWindow):
         self.title = 'Detect Droplets'
         self.left = 300
         self.top = 300
-        self.width = 450
+        self.width = 500
         self.height = 150
         self.initUI()
 
     def tipsWindow(self):
-        message = ('Make sure your ranges of radii do not overlap with each other.\n\n'
+        message = ('All settings should be positive integers except for the calibration value, which does not need to be an integer. \n\n'
+                   'Make sure your ranges of radii do not overlap with each other.\n\n'
                    'The Canny Edge Threshold is the upper threshold for the Canny edge detector.\n\n'
                    'Accumulator Threshold is the threshold for center detection. Smaller values can return false circles')
         QtWidgets.QMessageBox.about(self, 'Settings Tips', message)
