@@ -42,11 +42,47 @@ def createRow(calib, interval, count):
     return [minR, maxR, (minR + maxR) * 500, count, count / (maxR - minR)]
 
 
+def merge(left, right):
+    """Merge function used for merge sort"""
+    lPoint = 0
+    rPoint = 0
+    result = []
+
+    # Use two pointer method to build sorted list
+    while lPoint < len(left) and rPoint < len(right):
+        if left[lPoint][0] > right[rPoint][0]:  # Sort by min radius in descending order
+            result.append(left[lPoint])
+            lPoint += 1
+        else:
+            result.append(right[rPoint])
+            rPoint += 1
+
+    # Insert remaining terms from left or right
+    if lPoint < len(left):
+        for remaining in left[lPoint:]:
+            result.append(remaining)
+    elif rPoint < len(right):
+        for remaining in right[rPoint:]:
+            result.append(remaining)
+    return result
+
+
+def mergeSort(listOfLists):
+    """Recursive merge sort used for sorting user entered settings in order of descending min radius"""
+    if len(listOfLists) > 1:
+        left = mergeSort(listOfLists[0:len(listOfLists) // 2])
+        right = mergeSort(listOfLists[len(listOfLists) // 2:])
+        return merge(left, right)
+    else:
+        return listOfLists
+
+
 def main(settings, calib):
     calib = calib / 1000  # convert from microns to mm/pixel
+    settings = mergeSort(settings)
     cCounts = np.array([0.0 for x in range(len(settings))])  # initialize circle count/area for each size range
     path = os.environ["PATH"]
-    print('Picture path: ' + path)
+    print('Image path: ' + path)
     outPath = os.environ["OUT"] + '/'
     print('Output path: ' + outPath)
     images, filenames = loadAllImages(path)
