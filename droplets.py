@@ -26,7 +26,7 @@ def findCircles(img, cimg, minDist, p1, p2, minR, maxR):
     return circles
 
 
-def createRow(calib, interval, count):
+def createRow(calib, interval, count, countDen):
     """
     Create row to output from interval of circles c to a CSV file
 
@@ -34,12 +34,13 @@ def createRow(calib, interval, count):
     minimum radius in mm
     maximum radius in mm
     mean radius in microns
+    total droplet count
     average count per area
     number density N(r)
     """
     minR = interval[0] * calib
     maxR = interval[1] * calib
-    return [minR, maxR, (minR + maxR) * 500, count, count / (maxR - minR)]
+    return [minR, maxR, (minR + maxR) * 500, count, countDen, countDen / (maxR - minR)]
 
 
 def merge(left, right):
@@ -80,7 +81,8 @@ def mergeSort(listOfLists):
 def main(settings, calib):
     calib = calib / 1000  # convert from microns to mm/pixel
     settings = mergeSort(settings)
-    cCounts = np.array([0.0 for x in range(len(settings))])  # initialize circle count/area for each size range
+    cCounts = np.array([0 for x in range(len(settings))])  # initialize circle count for each size range
+    cCountsDen = np.array([0.0 for x in range(len(settings))])  # initialize circle count/area for each size range
     path = os.environ["PATH"]
     print('Image path: ' + path)
     outPath = os.environ["OUT"] + '/'
@@ -141,12 +143,16 @@ def main(settings, calib):
         # Re-find indices of each section after inner circle deletion
         indices = np.array([np.argmax(cTotalR < settings[i][0]) for i in range(len(settings) - 1)])
 
-        # Add counts/area of each size interval to total count (cCounts)
-        cList = [cTotalR[indices[i]:indices[i + 1]] for i in range(len(indices) - 1)]
-        cList.insert(0, cTotalR[0:indices[0]])  # Add first list of radii
-        cList.append(cTotalR[indices[-1]:])  # Add last list of radii
+        # Add counts/area of each size interval to total count (cCountsDen)
+        if len(indices) == 0:
+            cList = [cTotalR]
+        else:
+            cList = [cTotalR[indices[i]:indices[i + 1]] for i in range(len(indices) - 1)]
+            cList.insert(0, cTotalR[0:indices[0]])  # Add first list of radii
+            cList.append(cTotalR[indices[-1]:])  # Add last list of radii
         for i in range(len(cList)):
-            cCounts[i] += (len(cList[i]) / (calib**2 * height * width))
+            cCounts[i] += len(cList[i])
+            cCountsDen[i] += (len(cList[i]) / (calib**2 * height * width))
 
         # Draw circles onto a new image
         for i in cTotal:
@@ -155,10 +161,10 @@ def main(settings, calib):
 
     # Output data as csv
     print('Outputting data to out.csv')
-    outRows = [["Min r (mm)", "Max r (mm)", "Mean r (microns)", "Count/Area (#/mm^3)", "N(r) (#/mm^3)"]]
-    cCounts = cCounts / len(images)
-    for i in range(len(cCounts)):
-        outRows.append(createRow(calib, [settings[i][0], settings[i][1]], cCounts[i]))
+    outRows = [["Min r (mm)", "Max r (mm)", "Mean r (microns)", "Total Count (#)", "Count/Area (#/mm^3)", "N(r) (#/mm^3)"]]
+    cCountsDen = cCountsDen / len(images)
+    for i in range(len(cCountsDen)):
+        outRows.append(createRow(calib, [settings[i][0], settings[i][1]], cCounts[i], cCountsDen[i]))
     with open(outPath + 'out.csv', 'w', newline='') as csvfile:
         filewriter = csv.writer(csvfile)
         filewriter.writerows(outRows)
